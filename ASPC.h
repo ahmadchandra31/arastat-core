@@ -18,7 +18,7 @@
 
 #define SAMPLERATE 10   //#samples generated per second
 #define DAC_RESOLUTION 12 //12-bit
-#define TIA_RESISTOR 1000 //1k Resistor is placed in the TIA potentiostat
+#define TIA_RESISTOR 100 //1k Resistor is placed in the TIA potentiostat
 
 extern volatile uint16_t DACIndex;
 
@@ -41,7 +41,6 @@ typedef struct
     uint16_t *dac_sequence;
     int16_t vRef; //measured reference voltage
     uint16_t RTIA; //transimpedance amplifier resistor value 
-
 }ASPC_Conf;
 
 
@@ -50,7 +49,15 @@ typedef enum {
 	LINEAR_SWEEP_VOLTAMMETRY = 1,
     CYCLIC_VOLTAMMETRY,
     CHRONOAMPEROMETRY,
-    SAMPLE_RATE_CHANGE,
+    ASPC_SET_SAMPLE_RATE,
+    ASPC_SET_ADC_DAC_DELAY,
+    ASPC_SET_DAC_IDLE_VOLTAGE,
+    ASPC_SET_CYCLES,
+    ASPC_SET_DAC_EEPROM,
+    ASPC_SET_STARTING_VOLTAGE,
+    SET_REF_MEAS_VOLTAGE,
+    SET_RTIA,
+    SET_QUIET_TIME,
 }ASPC_Mode_t;
 
 void ASPC_init(ASPC_Conf *_ASPC);
