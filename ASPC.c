@@ -25,14 +25,43 @@ void ASPC_init(ASPC_Conf *_ASPC){
     _ASPC->V_scanRate=100;
     _ASPC->mode=CYCLIC_VOLTAMMETRY;
     _ASPC->rate=SAMPLERATE;
+    _ASPC->vRef=_ASPC->V_ref/2;
     // _ASPC->dac_sequence=ASPC_GetDACSequence(_ASPC);
 }
 
+/**
+ * @brief Configure an ASPC device instance from a packed parameter array.
+ *
+ * This function initializes several configuration fields of the provided
+ * ASPC_Conf structure using values supplied in a 4-element int16_t array.
+ * It also validates the reference voltage field and forces a default if it
+ * is not one of the supported reference constants.
+ *
+ * Parameters expected in the data array (in order):
+ *   data[0] - operating mode (ASPC mode identifier)
+ *   data[1] - start voltage (millivolts)
+ *   data[2] - final/target voltage (millivolts)
+ *   data[3] - scan rate (implementation-defined units)
+ *
+ * @param _ASPC Pointer to the ASPC_Conf structure to configure. Must be non-NULL.
+ * @param data  Pointer to an int16_t array containing at least 4 elements as described above.
+ *
+ * Side effects:
+ * - Calls ASPC_SetMode, ASPC_SetStartVoltage, ASPC_SetVFinal and ASPC_setScanRate
+ *   to apply individual settings.
+ * - If _ASPC->V_ref is not equal to ASPC_3_3V_REF or ASPC_5V_REF, a message is printed
+ *   and _ASPC->V_ref is set to 3300 (3.3 V expressed in millivolts).
+ *
+ * Notes:
+ * - The function does not perform NULL-pointer checks; callers must ensure valid pointers.
+ * - The meaning and valid ranges of "mode" and "scan rate" are defined by the ASPC API.
+ * - Voltage values are expressed in millivolts.
+ */
 void ASPC_configure(ASPC_Conf *_ASPC,int16_t *data){
-    _ASPC->mode=*(data);
-    _ASPC->V_start=*(data+1);
-    _ASPC->V_final=*(data+2);
-    _ASPC->V_scanRate=*(data+3);
+    ASPC_SetMode(_ASPC,*(data));
+    ASPC_SetStartVoltage(_ASPC,*(data+1));
+    ASPC_SetVFinal(_ASPC,*(data+2));
+    ASPC_SetScanRate(_ASPC,*(data+3));
     
     if (_ASPC->V_ref!=ASPC_3_3V_REF && _ASPC->V_ref!=ASPC_5V_REF) {
         printf("Reference voltage is not set\n");
@@ -161,6 +190,11 @@ void ASPC_SetMode(ASPC_Conf *_ASPC, uint8_t mode){
 
 
 void ASPC_SetSampleRate(ASPC_Conf *_ASPC,uint16_t sample_rate){
+    if (sample_rate<0) {
+        printf("Sample rate cannot be less than 0, setting up the default value\n");
+        _ASPC->rate=SAMPLERATE;
+        return;
+    }
     _ASPC->rate=sample_rate;
     if (_ASPC->dac_sequence!=NULL) {
         free(_ASPC->dac_sequence);
