@@ -21,7 +21,7 @@ void ASPC_init(ASPC_Conf *_ASPC){
     #endif
     _ASPC->V_start=-600;
     //V_initial set the same as reference to disable the initial voltage
-    _ASPC->V_initial=_ASPC->V_ref;
+    _ASPC->V_initial=_ASPC->V_start;
     _ASPC->V_scanRate=100;
     _ASPC->mode=CYCLIC_VOLTAMMETRY;
     _ASPC->rate=SAMPLERATE;
@@ -99,6 +99,7 @@ void ASPC_SetScanRate(ASPC_Conf *_ASPC,uint16_t VScan){
 }
 
 void ASPC_SetStartVoltage(ASPC_Conf *_ASPC,int16_t VStart){
+    if (VStart>(_ASPC->V_initial)) _ASPC->V_initial=VStart;
     _ASPC->V_start=VStart;
     return;
 }
@@ -133,7 +134,7 @@ void ASPC_SetVInit(ASPC_Conf *_ASPC,int16_t Vinit){
     return;
   }
   _ASPC->V_initial=Vinit;
-//   _ASPC->dac_sequence=ASPC_GetDACSequence(_ASPC);
+  _ASPC->dac_sequence=ASPC_GetDACSequence(_ASPC);
   printf("The inital voltage has been successfully. set initial voltage:%d\n",Vinit);
   return;
     
@@ -274,7 +275,7 @@ uint16_t * ASPC_GetDACSequence(ASPC_Conf *_ASPC){
     
 else if (_ASPC->mode==CYCLIC_VOLTAMMETRY){ 
   //if the initial voltage isn't set
-  if (_ASPC->V_initial==_ASPC->V_ref){
+  if (_ASPC->V_initial==_ASPC->V_ref || _ASPC->V_initial==_ASPC->V_start){
     dac_seq =  GenerateSequence(_ASPC,_ASPC->V_start,_ASPC->V_final,1);
   
   }
