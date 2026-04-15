@@ -13,3 +13,7 @@ target_include_directories(ASPC PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Optionally, add compile options
 target_compile_options(ASPC PRIVATE -Wall -Wextra)
+
+# Add the test executable
+add_executable(aspc_test test/main.cpp)
+target_link_libraries(aspc_test PRIVATE ASPC)

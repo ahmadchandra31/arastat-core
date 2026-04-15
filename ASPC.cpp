@@ -31,12 +31,10 @@ ASPC::ASPC() {
     rate = SAMPLERATE;
     vRef = V_ref / 2;
     // dac_sequence will be generated when needed
-}
-
-ASPC::ASPC(const ASPC&) {
-    // Copy constructor is deleted to prevent copying of the ASPC instance
-    // This is to avoid issues with copying vectors and other resources
-    throw std::runtime_error("Copy constructor is deleted for ASPC class");
+    dac_sequence = nullptr;
+    buffer_volt = nullptr;
+    buffer_curr = nullptr;
+    RTIA = 1000; // default RTIA value, can be changed by the user
 }
 
 void ASPC::configure(int16_t *data) {
@@ -57,8 +55,11 @@ void ASPC::configure(int16_t *data) {
 void ASPC::deinit() {
     // In C++, destructor handles cleanup, but if needed, clear vectors
     free((void *)dac_sequence);
+    dac_sequence = nullptr;
     free((void *)buffer_volt);
+    buffer_volt = nullptr;
     free((void *)buffer_curr);
+    buffer_curr = nullptr;
 }
 
 // Setters
@@ -232,7 +233,9 @@ else if (mode==CYCLIC_VOLTAMMETRY){
     }
     _dac_size+=size-1;
     free(seq1);
+    seq1=nullptr;
     free(seq2);
+    seq2=nullptr;
   }   
 }
 
@@ -303,7 +306,7 @@ float ASPC::getCurrent(uint16_t Rval, int16_t adcValue) {
 }
 
 bool ASPC::isDAQEnabled() const {
-    return isDAQEnabled;
+    return isDAQEnabledFlag;
 }
 
 void ASPC::enableDataAcquisition() {
@@ -316,13 +319,15 @@ void ASPC::enableDataAcquisition() {
 void ASPC::disableDataAcquisition() {
     isDAQEnabledFlag = false;
     free((void *)buffer_curr);
+    buffer_curr = nullptr;
     free((void *)buffer_volt);
+    buffer_volt = nullptr;
 }
 
 /*
 get data*/
 void ASPC::getRawData() {
-    if (!isDAQEnabled) {
+    if (!isDAQEnabled()) {
         std::cout << "Data acquisition is not enabled" << std::endl;
         return;
     }
@@ -365,7 +370,7 @@ uint16_t ASPC::getRTIA() const {
 }
 
 void ASPC::computeCurrent() {
-    if (!isDAQEnabled) {
+    if (!isDAQEnabled()) {
         std::cout << "Data acquisition is not enabled" << std::endl;
         return;
     }
