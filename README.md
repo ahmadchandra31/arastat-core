@@ -15,7 +15,7 @@ cmake ..
 make
 ```
 
-## Usage
+## Usage (Deprecated Updates soon :D)
 
 Include `ASPC.hpp` in your project and link against the `ASPC` library.
 
