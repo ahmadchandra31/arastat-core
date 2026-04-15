@@ -1,7 +1,6 @@
 #ifndef ASPC_HPP
 #define ASPC_HPP
 
-#include <vector>
 #include <cstdint>
 #include <cstdio>
 
@@ -53,6 +52,8 @@ private:
     uint16_t *dac_sequence;
     int16_t vRef; //measured reference voltage
     uint16_t RTIA; //transimpedance amplifier resistor value
+    volatile uint16_t indexDAC;
+
 
 public:
     ASPC();
@@ -89,6 +90,8 @@ public:
     void setReferenceMeasuredVoltage(int16_t vRef);
     void setRTIA(uint16_t RTIA);
     void computeCurrent();
+    void nextDAC(void);
+    uint16_t getCurrentDAC(void);
     int16_t getReferenceMeasuredVoltage() const;
     uint16_t getRTIA() const;
 

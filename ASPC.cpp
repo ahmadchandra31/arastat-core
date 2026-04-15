@@ -1,6 +1,6 @@
 /*
 ARASTAT POTENTIOSTAT CORE
-Written by arachanx21
+Written by ahmadchandra31
 ARA APPLIED 2023
 
 Converted to C++ by GitHub Copilot
@@ -11,7 +11,9 @@ You may copy, modify,redistribute directly or in derivatives as long as it's in 
 */
 #include "ASPC.hpp"
 #include <algorithm>
+#ifdef DEV_MODE
 #include <iostream>
+#endif
 
 volatile uint16_t DACIndex = 0;
 
@@ -44,8 +46,10 @@ void ASPC::configure(int16_t *data) {
     setScanRate(data[3]);
 
     if (V_ref != ASPC_3_3V_REF && V_ref != ASPC_5V_REF) {
+    #ifdef DEV_MODE
         std::cout << "Reference voltage is not set" << std::endl;
         std::cout << "Setting to default 3.3V" << std::endl;
+    #endif
         V_ref = 3300;
     }
 
@@ -74,34 +78,46 @@ void ASPC::setStartVoltage(int16_t VStart) {
 
 void ASPC::setVInit(int16_t Vinit) {
     if (Vinit > (V_ref) / 2) {
+        #ifdef DEV_MODE
         std::cout << "Initial voltage is out of range of positive reference voltage" << std::endl;
+        #endif
         return;
     } else if (Vinit < (-(V_ref) / 2)) {
+        #ifdef DEV_MODE
         std::cout << "Initial voltage is out of range of negative reference voltage" << std::endl;
+        #endif
         return;
     }
     // if the scan is increasing, the initial voltage should be less than the final voltage and more than the starting one
     else if ((V_start < V_final)) {
         if (Vinit > V_final || Vinit < V_start) {
+            #ifdef DEV_MODE
             std::cout << "Initial voltage is out of range" << std::endl;
             std::cout << "The initial voltage is lower than starting voltage or higher than final voltage" << std::endl;
+            #endif
             return;
         }
     }
     // if the scan is decreasing, the initial voltage should be more than the final voltage and less than the starting one
     else if (V_start > V_final) {
         if (Vinit < V_final || Vinit > V_start) {
+            #ifdef DEV_MODE
             std::cout << "Initial voltage is out of range" << std::endl;
             std::cout << "The initial voltage is higher than starting voltage or lower than final voltage" << std::endl;
+            #endif
             return;
         }
     } else {
+        #ifdef DEV_MODE
         std::cout << "The initial voltage cannot be set" << std::endl;
+        #endif
         return;
     }
     V_initial = Vinit;
     getDACs();
+    #ifdef DEV_MODE
     std::cout << "The initial voltage has been successfully set. Initial voltage: " << Vinit << std::endl;
+    #endif
 }
 
 void ASPC::setVFinal(int16_t Vfinal) {
@@ -143,7 +159,9 @@ void ASPC::setMode(uint8_t mode) {
 
 void ASPC::setSampleRate(uint16_t sample_rate) {
     if (sample_rate < 0) {
+        #ifdef DEV_MODE
         std::cout << "Sample rate cannot be less than 0, setting up the default value" << std::endl;
+        #endif
         rate = SAMPLERATE;
         return;
     }
@@ -236,13 +254,14 @@ else if (mode==CYCLIC_VOLTAMMETRY){
     seq1=nullptr;
     free(seq2);
     seq2=nullptr;
-  }   
-}
-
-return dac_seq;
+      }   
+    }
+    indexDAC =0;
+    return dac_seq;
 }
 
 uint16_t *ASPC::generateSequence(int16_t V_start, int16_t V_final, bool cyclic) {
+    
     uint16_t size;
     uint16_t *dac_seq = nullptr;
     uint16_t mid;

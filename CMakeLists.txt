@@ -16,4 +16,5 @@ target_compile_options(ASPC PRIVATE -Wall -Wextra)
 
 # Add the test executable
 add_executable(aspc_test test/main.cpp)
+add_compile_definitions(DEV_MODE)
 target_link_libraries(aspc_test PRIVATE ASPC)
