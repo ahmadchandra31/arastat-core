@@ -27,7 +27,7 @@ ASPC::ASPC() {
     // V_initial set the same as reference to disable the initial voltage
     V_initial = V_start;
     V_scanRate = 100;
-    mode = ASPC_Mode::CYCLIC_VOLTAMMETRY;
+    mode = CYCLIC_VOLTAMMETRY;
     rate = SAMPLERATE;
     vRef = V_ref / 2;
     // dac_sequence will be generated when needed
@@ -39,12 +39,8 @@ ASPC::ASPC(const ASPC&) {
     throw std::runtime_error("Copy constructor is deleted for ASPC class");
 }
 
-void ASPC::configure(const std::vector<int16_t>& data) {
-    if (data.size() < 4) {
-        std::cerr << "Insufficient data for configuration" << std::endl;
-        return;
-    }
-    setMode(static_cast<ASPC_Mode>(data[0]));
+void ASPC::configure(int16_t *data) {
+    setMode(data[0]);
     setStartVoltage(data[1]);
     setVFinal(data[2]);
     setScanRate(data[3]);
@@ -60,9 +56,9 @@ void ASPC::configure(const std::vector<int16_t>& data) {
 
 void ASPC::deinit() {
     // In C++, destructor handles cleanup, but if needed, clear vectors
-    dac_sequence.clear();
-    buffer_volt.clear();
-    buffer_curr.clear();
+    free((void *)dac_sequence);
+    free((void *)buffer_volt);
+    free((void *)buffer_curr);
 }
 
 // Setters
@@ -123,7 +119,7 @@ void ASPC::setReferenceVoltage(uint16_t Vref) {
         V_initial = Vref;
     }
     V_ref = Vref;
-    if (!dac_sequence.empty()) {
+    if (dac_sequence != nullptr) {
         getDACs();
     }
 }
@@ -131,15 +127,15 @@ void ASPC::setReferenceVoltage(uint16_t Vref) {
 void ASPC::setDACResolution(uint8_t _DAC_RES) {
     DAC_RES = _DAC_RES;
     // update the DAC sequence following the resolution change
-    if (!dac_sequence.empty()) {
+    if (dac_sequence != nullptr) {
         getDACs();
     }
 }
 
-void ASPC::setMode(ASPC_Mode mode) {
+void ASPC::setMode(uint8_t mode) {
     // set the mode of the potentiostat
     this->mode = mode;
-    if (!dac_sequence.empty()) {
+    if (dac_sequence != nullptr) {
         getDACs();
     }
 }
@@ -151,7 +147,7 @@ void ASPC::setSampleRate(uint16_t sample_rate) {
         return;
     }
     rate = sample_rate;
-    if (!dac_sequence.empty()) {
+    if (dac_sequence != nullptr) {
         getDACs();
     }
 }
@@ -200,76 +196,94 @@ void ASPC::getDACs() {
     dac_sequence = getDACSequence();
 }
 
-const std::vector<uint16_t>& ASPC::getDACSequence() {
-    /* generating array of dac values for potentiostat voltage sequences
-    @return reference to dac_sequence vector
-    */
-    dac_sequence.clear();
-    _dac_size = 0;
-
-    if (mode == ASPC_Mode::LINEAR_SWEEP_VOLTAMMETRY) { // linear forward
-        if (V_start == V_final) return dac_sequence;
-        dac_sequence = generateSequence(V_start, V_final, false);
-    } else if (mode == ASPC_Mode::CYCLIC_VOLTAMMETRY) {
-        // if the initial voltage isn't set
-        if (V_initial == V_ref || V_initial == V_start) {
-            dac_sequence = generateSequence(V_start, V_final, true);
-        } else {
-            auto seq1 = generateSequence(V_initial, V_final, true);
-            uint16_t size = _dac_size;
-            auto seq2 = generateSequence(V_initial, V_start, true);
-
-            // when sequence 1 and 2 are added, there is one same value in the start of sequence 2
-            // the size is reduced by 1 to remove redundancy
-            dac_sequence.resize(size - 1 + _dac_size);
-            std::copy(seq1.begin(), seq1.end(), dac_sequence.begin());
-            // the first value of seq2 is the same as the last value of seq1, skipped 1 increment.
-            std::copy(seq2.begin() + 1, seq2.end(), dac_sequence.begin() + size);
-            _dac_size += size - 1;
-        }
+    uint16_t *ASPC::getDACSequence() {
+    if (dac_sequence!=nullptr) {
+    free(dac_sequence);
+    dac_sequence=nullptr;
+  }
+  uint16_t *dac_seq=nullptr;
+  uint16_t size;
+    
+  if (mode == LINEAR_SWEEP_VOLTAMMETRY) { //linear forward
+    if (V_start==V_final) return nullptr;
+    return generateSequence(V_start,V_final,0);
+  }
+    
+else if (mode==CYCLIC_VOLTAMMETRY){ 
+  //if the initial voltage isn't set
+  if (V_initial==V_ref || V_initial==V_start){
+    dac_seq =  generateSequence(V_start,V_final,1);
+  
+  }
+  else{
+    uint16_t *seq1 = generateSequence(V_initial,V_final,1);
+    size = _dac_size;
+    uint16_t *seq2 = generateSequence(V_initial,V_start,1);
+    
+    //when sequence 1 and 2 are added, there is one same value in the start of sequence 2
+    //the size is reduced by 1 to remove redundancy
+    dac_seq = (uint16_t *) malloc((size-1+_dac_size)*sizeof(uint16_t));
+    for (int i=0;i<size;i++){
+        *(dac_seq+i)=*(seq1+i);
     }
-
-    return dac_sequence;
+    //the first value of seq2 is the same as the last value of seq1, skipped 1 increment.
+    for (int i=1;i<_dac_size;i++){
+        *(dac_seq+size+i-1)=*(seq2+i);
+    }
+    _dac_size+=size-1;
+    free(seq1);
+    free(seq2);
+  }   
 }
 
-std::vector<uint16_t> ASPC::generateSequence(int16_t V_start, int16_t V_final, bool cyclic) {
-    std::vector<uint16_t> dac_seq;
+return dac_seq;
+}
+
+uint16_t *ASPC::generateSequence(int16_t V_start, int16_t V_final, bool cyclic) {
     uint16_t size;
+    uint16_t *dac_seq = nullptr;
+    uint16_t mid;
     int8_t multiplier = 1;
-    if ((V_start) > (V_final)) size = (uint16_t)((V_start) - (V_final)) * (rate) / (V_scanRate);
-    else size = (uint16_t)(-V_start + V_final) * (rate) / (V_scanRate);
+    if ((V_start)>(V_final)) size = (uint16_t) ((V_start)-(V_final))*(rate)/(V_scanRate);
+    else size = (uint16_t) (-V_start+V_final)*(rate)/(V_scanRate);
     if (cyclic) {
-        size *= 2;
-        if (size % 2 != 0) {
+        size*=2;
+        if (size%2!=0) {
             size++;
+            mid=size/2;
+            // _ASPC->_dac_size=size+1;//yet to debug
             _dac_size = size + 1;
-            dac_seq.resize(_dac_size);
-        } else {
+            dac_seq = (uint16_t *) malloc((_dac_size)*sizeof(uint16_t));
+            }
+
+        else{
             size++;
+            mid=size/2;
             _dac_size = size;
-            dac_seq.resize(_dac_size);
+            dac_seq = (uint16_t *) malloc((_dac_size)*sizeof(uint16_t));
         }
-    } else {
-        _dac_size = size;
-        dac_seq.resize(_dac_size);
     }
-    uint16_t mid = cyclic ? size / 2 : size;
-    std::cout << "size: " << size << std::endl;
+    else {
+      mid=size;
+      dac_seq = (uint16_t *) malloc((_dac_size)*sizeof(uint16_t));
+      }
+      _dac_size=size;
+      printf("size:%hu\n",size);
 
-    float val = VToDAC(V_ref, V_start);
-    float step_val = getDACStepValue();
-    std::cout << "Step value: " << (uint16_t)step_val << std::endl;
-    // if Vstart <0 DAC value increases, then from 1 should be multiplied by -1 otherwise changed from -1 to reverse the increment.
-    if (V_start > V_final) multiplier *= -1;
+      float val=VToDAC(V_ref,V_start);
+      float step_val = getDACStepValue();
+      printf("Step value: %d\n",(uint16_t)step_val);
+      //if Vstart <0 DAC value increases, then from 1 should be multiplied by -1 otherwise changed from -1 to reverse the increment.
+      if (V_start>V_final ) multiplier*=-1;
 
-    for (size_t i = 0; i < mid; ++i) {
-        dac_seq[i] = (uint16_t)val;
-        if (cyclic) dac_seq[size - 1 - i] = dac_seq[i];
-        val += step_val * multiplier;
-    }
-    if (cyclic) dac_seq[mid] = VToDAC(V_ref, V_final);
-    else dac_seq[size - 1] = VToDAC(V_ref, V_final);
-
+      for (int i=0;i<mid;i++){
+          *(dac_seq+i)=(uint16_t) val;
+          if (cyclic) *(dac_seq+size-1-i)=*(dac_seq+i);
+          val+=step_val*multiplier;
+      } 
+      if (cyclic) *(dac_seq+mid)=VToDAC(V_ref,V_final);
+      else *(dac_seq+size-1)=VToDAC(V_ref,V_final);
+    
     return dac_seq;
 }
 
@@ -295,15 +309,14 @@ bool ASPC::isDAQEnabled() const {
 void ASPC::enableDataAcquisition() {
     // enable data acquisition
     isDAQEnabledFlag = true;
-
-    buffer_curr.resize(_dac_size);
-    buffer_volt.resize(_dac_size);
+    buffer_volt = (int16_t *)malloc(_dac_size * sizeof(int16_t));
+    buffer_curr = (int16_t *)malloc(_dac_size * sizeof(int16_t));
 }
 
 void ASPC::disableDataAcquisition() {
     isDAQEnabledFlag = false;
-    buffer_curr.clear();
-    buffer_volt.clear();
+    free((void *)buffer_curr);
+    free((void *)buffer_volt);
 }
 
 /*
@@ -313,7 +326,7 @@ void ASPC::getRawData() {
         std::cout << "Data acquisition is not enabled" << std::endl;
         return;
     }
-    if (buffer_curr.empty() || buffer_volt.empty()) {
+    if (buffer_curr == nullptr|| buffer_volt == nullptr) {
         std::cout << "Data buffers are not allocated" << std::endl;
         return;
     }
@@ -356,7 +369,7 @@ void ASPC::computeCurrent() {
         std::cout << "Data acquisition is not enabled" << std::endl;
         return;
     }
-    if (buffer_curr.empty() || buffer_volt.empty()) {
+    if (buffer_curr == nullptr || buffer_volt == nullptr) {
         std::cout << "Data buffers are not allocated" << std::endl;
         return;
     }

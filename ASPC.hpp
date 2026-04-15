@@ -19,8 +19,8 @@
 
 extern volatile uint16_t DACIndex;
 
-enum class ASPC_Mode : uint8_t {
-    LINEAR_SWEEP_VOLTAMMETRY = 1,
+typedef enum {
+	LINEAR_SWEEP_VOLTAMMETRY = 1,
     CYCLIC_VOLTAMMETRY,
     CHRONOAMPEROMETRY,
     ASPC_SET_SAMPLE_RATE,
@@ -32,7 +32,7 @@ enum class ASPC_Mode : uint8_t {
     SET_REF_MEAS_VOLTAGE,
     SET_RTIA,
     SET_QUIET_TIME,
-};
+}ASPC_Mode_t;
 
 class ASPC {
 private:
@@ -44,13 +44,13 @@ private:
     int16_t V_final; //final scan
     uint8_t DAC_RES;
     uint16_t rate;
-    ASPC_Mode mode;
+    uint8_t mode;
     bool isDAQEnabledFlag; //flag to store data or not
-    std::vector<int16_t> buffer_volt; //buffer to store adc values
-    std::vector<int16_t> buffer_curr; //buffer to store adc values
+    int16_t *buffer_volt; //buffer to store adc values
+    int16_t *buffer_curr; //buffer to store adc values
     //private generated from get_dac_sequence
     uint16_t _dac_size;
-    std::vector<uint16_t> dac_sequence;
+    uint16_t *dac_sequence;
     int16_t vRef; //measured reference voltage
     uint16_t RTIA; //transimpedance amplifier resistor value
 
@@ -59,7 +59,7 @@ public:
     ~ASPC() = default;
     ASPC(const ASPC&) = delete; // disable copy constructor
 
-    void configure(const std::vector<int16_t>& data);
+    void configure(int16_t *data);
     void deinit(); // Note: in C++ destructor handles deallocation
 
     // Setters
@@ -69,7 +69,7 @@ public:
     void setVFinal(int16_t Vfinal);
     void setReferenceVoltage(uint16_t Vref);
     void setDACResolution(uint8_t _DAC_RES);
-    void setMode(ASPC_Mode mode);
+    void setMode(uint8_t mode);
     void setSampleRate(uint16_t sample_rate);
 
     // Getters
@@ -78,7 +78,7 @@ public:
     static uint16_t VToDAC(uint16_t vRef, int16_t vTarget);
     float getDACStepValue();
     int16_t DACtoVolt(uint16_t DACValue);
-    const std::vector<uint16_t>& getDACSequence();
+    uint16_t *getDACSequence();
     void getDACs();
     float getCurrent(uint16_t Rval, int16_t adcValue);
     void enableDataAcquisition();
@@ -93,7 +93,7 @@ public:
     uint16_t getRTIA() const;
 
 private:
-    std::vector<uint16_t> generateSequence(int16_t V_start, int16_t V_final, bool cyclic);
+    uint16_t *generateSequence(int16_t V_start, int16_t V_final, bool cyclic);
 };
 
 #endif // ASPC_HPP
