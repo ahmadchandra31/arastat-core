@@ -37,6 +37,8 @@ ASPC::ASPC() {
     buffer_volt = nullptr;
     buffer_curr = nullptr;
     RTIA = 1000; // default RTIA value, can be changed by the user
+    indexDAC = 0;
+    isDAQEnabledFlag = false;
 }
 
 void ASPC::configure(int16_t *data) {
@@ -307,6 +309,36 @@ uint16_t *ASPC::generateSequence(int16_t V_start, int16_t V_final, bool cyclic) 
       else *(dac_seq+size-1)=VToDAC(V_ref,V_final);
     
     return dac_seq;
+}
+
+uint16_t ASPC::getIndexDAC(void) {
+    return indexDAC;
+}
+
+uint16_t ASPC::getCurrentDAC(void){
+    if (dac_sequence == nullptr) {
+        std::cout << "DAC sequence is not generated yet" << std::endl;
+        return 0;
+    }
+    return *(dac_sequence + indexDAC);
+}
+
+void ASPC::nextDAC(void) {
+    if (dac_sequence == nullptr) {
+        std::cout << "DAC sequence is not generated yet" << std::endl;
+        return;
+    }
+    if (indexDAC < _dac_size) {
+        indexDAC++;
+    } else {
+        std::cout << "Reached the end of DAC sequence" << std::endl;
+        indexDAC = 0; // reset to the beginning of the sequence
+    }
+
+}
+
+uint16_t ASPC::getSequenceSize(void) const{
+    return _dac_size;
 }
 
 /*

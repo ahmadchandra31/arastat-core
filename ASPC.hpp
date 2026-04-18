@@ -90,6 +90,8 @@ public:
     void setReferenceMeasuredVoltage(int16_t vRef);
     void setRTIA(uint16_t RTIA);
     void computeCurrent();
+    uint16_t getIndexDAC(void);
+    uint16_t getSequenceSize(void) const;
     void nextDAC(void);
     uint16_t getCurrentDAC(void);
     int16_t getReferenceMeasuredVoltage() const;
