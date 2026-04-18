@@ -1,12 +1,22 @@
-# arastat-core (under development)
-ARA Applied Potentiostat Core. A C++ library to generate DAC values for potentiostat operations. This library provides an API to generate DAC signals for cyclic voltammetry and LSV in potentiostats. Our potentiostat design utilizes a differential amplifier where the voltage applied from the digital-to-analog converter is subtracted with a reference voltage in the subtracting amplifier.
+# arastat-core
+
+**ARA Applied Potentiostat Core** is a C++ library designed to generate DAC values for electrochemical potentiostat operations. It provides a standardized API for generating waveforms for Cyclic Voltammetry (CV) and Linear Sweep Voltammetry (LSV).
+
+The library is architected for potentiostat designs utilizing a differential amplifier topology, where the DAC output is subtracted from a reference voltage to achieve the desired cell potential.
 
 ARAStat Schematics (Simulated):
 <img width="1171" alt="Screenshot 2025-01-21 at 18 09 09" src="https://github.com/user-attachments/assets/0607d480-1aae-4664-af6a-07dc5bb2d724" />
 
+## Features
+
+- **Waveform Generation**: High-precision signal generation for CV and LSV.
+- **Hardware Optimized**: Specifically designed for subtracting/differential amplifier stages.
+- **Bipolar Support**: Logic designed to allow bipolar sweeps using common unipolar power rails (3.3V/5V).
+- **Lightweight**: Minimal dependencies, ideal for embedded systems or high-level simulations.
+
 ## Building the Library
 
-This project uses CMake to build the static library.
+Build the static library using CMake:
 
 ```bash
 mkdir build
@@ -15,7 +25,7 @@ cmake ..
 make
 ```
 
-## Usage (Deprecated Updates soon :D)
+## Usage
 
 Include `ASPC.hpp` in your project and link against the `ASPC` library.
 
@@ -26,9 +36,17 @@ Example:
 
 int main() {
     ASPC potentiostat;
-    std::vector<int16_t> config = {static_cast<int16_t>(ASPC_Mode::CYCLIC_VOLTAMMETRY), -600, 600, 100};
+
+    // Configuration array: [Mode, Start Voltage (mV), End Voltage (mV), Scan Rate (mV/s)]
+    int16_t config[] = {CYCLIC_VOLTAMMETRY, -600, 600, 100};
+
     potentiostat.configure(config);
-    // Use the potentiostat...
+
+    // The library calculates the necessary DAC steps based on your configuration.
+
+    //implement the timer
+
+    
     return 0;
 }
 ```
