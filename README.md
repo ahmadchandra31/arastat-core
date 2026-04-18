@@ -39,8 +39,10 @@ int main() {
 
     // Configuration array: [Mode, Start Voltage (mV), End Voltage (mV), Scan Rate (mV/s)]
     int16_t config[] = {CYCLIC_VOLTAMMETRY, -600, 600, 100};
-
     potentiostat.configure(config);
+    
+    //setting up DAC generation rate (e.g 10 DAC per second)
+    potentiostat.setSampleRate(10);
 
     // The library calculates the necessary DAC steps based on your configuration.
 
