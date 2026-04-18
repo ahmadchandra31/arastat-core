@@ -44,9 +44,13 @@ int main() {
 
     // The library calculates the necessary DAC steps based on your configuration.
 
-    //implement the timer
+    //obtaining the dac value
+    //can be used during timer ISR when setting up the DAC
+    uint_16t dac = potentiostat.getIndexDAC()  
+    //setting up the next value
+    aspc.getSequenceSize()
 
-    
+
     return 0;
 }
 ```
