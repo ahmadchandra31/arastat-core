@@ -317,7 +317,9 @@ uint16_t ASPC::getIndexDAC(void) {
 
 uint16_t ASPC::getCurrentDAC(void){
     if (dac_sequence == nullptr) {
+        #ifdef DEV_MODE
         std::cout << "DAC sequence is not generated yet" << std::endl;
+        #endif
         return 0;
     }
     return *(dac_sequence + indexDAC);
@@ -325,13 +327,17 @@ uint16_t ASPC::getCurrentDAC(void){
 
 void ASPC::nextDAC(void) {
     if (dac_sequence == nullptr) {
+        #ifdef DEV_MODE
         std::cout << "DAC sequence is not generated yet" << std::endl;
+        #endif
         return;
     }
     if (indexDAC < _dac_size) {
         indexDAC++;
     } else {
+        #ifdef DEV_MODE
         std::cout << "Reached the end of DAC sequence" << std::endl;
+        #endif
         indexDAC = 0; // reset to the beginning of the sequence
     }
 
@@ -379,25 +385,33 @@ void ASPC::disableDataAcquisition() {
 get data*/
 void ASPC::getRawData() {
     if (!isDAQEnabled()) {
+        #ifdef DEV_MODE
         std::cout << "Data acquisition is not enabled" << std::endl;
+        #endif
         return;
     }
     if (buffer_curr == nullptr|| buffer_volt == nullptr) {
+        #ifdef DEV_MODE
         std::cout << "Data buffers are not allocated" << std::endl;
+        #endif
         return;
     }
     for (size_t i = 0; i < _dac_size; ++i) {
+        #ifdef DEV_MODE
         std::cout << "DAC Value: " << dac_sequence[i] << "\t";
         std::cout << "adc_buffer: " << buffer_volt[i] << std::endl;
         std::cout << "curr_buffer: " << buffer_curr[i] << std::endl;
+        #endif
     }
 }
 
 uint16_t ASPC::voltageToDAC(int16_t voltage, uint16_t vRef, uint16_t dacResolution) {
     uint16_t dacVal;
     if (voltage > vRef / 2 || (voltage < -vRef / 2)) {
+        #ifdef DEV_MODE
         std::cout << "Currently using " << vRef << " mV reference voltage" << std::endl;
         std::cout << "Voltage is out of range" << std::endl;
+        #endif
         return 0;
     }
     dacVal = (uint16_t)(voltage + (vRef / 2)) * dacResolution / vRef;
@@ -422,15 +436,21 @@ uint16_t ASPC::getRTIA() const {
 
 void ASPC::computeCurrent() {
     if (!isDAQEnabled()) {
+        #ifdef DEV_MODE
         std::cout << "Data acquisition is not enabled" << std::endl;
+        #endif
         return;
     }
     if (buffer_curr == nullptr || buffer_volt == nullptr) {
+        #ifdef DEV_MODE
         std::cout << "Data buffers are not allocated" << std::endl;
+        #endif
         return;
     }
     if (RTIA == 0) {
+        #ifdef DEV_MODE
         std::cout << "RTIA is not set" << std::endl;
+        #endif
         return;
     }
     for (size_t i = 0; i < _dac_size; ++i) {
