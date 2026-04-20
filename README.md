@@ -50,7 +50,7 @@ int main() {
     //can be used during timer ISR when setting up the DAC
     uint16_t dac = potentiostat.getIndexDAC()  
     //setting up the next value
-    aspc.getSequenceSize()
+    aspc.nextDAC();
 
 
     return 0;
